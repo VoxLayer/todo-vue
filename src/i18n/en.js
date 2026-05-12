@@ -17,4 +17,6 @@ export default {
   undoMsg: 'Task removed',
   dueDate: 'Due date',
   dragHint: 'Drag to reorder',
+  soundOn: '🔊',
+  soundOff: '🔇',
 }

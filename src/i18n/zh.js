@@ -17,4 +17,6 @@ export default {
   undoMsg: '任务已删除',
   dueDate: '截止日期',
   dragHint: '拖拽排序',
+  soundOn: '🔊',
+  soundOff: '🔇',
 }

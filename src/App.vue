@@ -8,6 +8,11 @@ import { formatDate, isOverdue, isToday } from './utils/date.js'
 const { state, t, setLocale } = useI18n()
 provide('i18n', { state, t, setLocale })
 
+const MUTE_KEY = 'todo_hero_muted'
+const muted = ref(localStorage.getItem(MUTE_KEY) === 'true')
+function sfx(type) { if (!muted.value) playSound(type) }
+function toggleMute() { muted.value = !muted.value; localStorage.setItem(MUTE_KEY, muted.value) }
+
 const STORAGE_KEY = 'todo_hero_data'
 const todos = ref([])
 const filter = ref('all')
@@ -69,20 +74,20 @@ function addTodo() {
   })
   newText.value = ''
   newDueDate.value = ''
-  playSound('pow')
+  sfx('pow')
   nextTick(() => inputRef.value?.focus())
 }
 
 function toggle(id) {
   const t = todos.value.find(t => t.id === id)
-  if (t) { t.done = !t.done; playSound('pop') }
+  if (t) { t.done = !t.done; sfx('pop') }
 }
 
 function remove(id) {
   const idx = todos.value.findIndex(t => t.id === id)
   if (idx === -1) return
   const [item] = todos.value.splice(idx, 1)
-  playSound('bam')
+  sfx('bam')
   showUndo(item)
 }
 
@@ -90,7 +95,7 @@ function clearCompleted() {
   const count = todos.value.filter(t => t.done).length
   if (!count) return
   todos.value = todos.value.filter(t => !t.done)
-  playSound('zap')
+  sfx('zap')
 }
 
 // --- undo ---
@@ -105,7 +110,7 @@ function undoRemove() {
   todos.value.push(undoItem.value)
   undoItem.value = null
   clearTimeout(undoTimer)
-  playSound('pop')
+  sfx('pop')
 }
 
 // --- edit ---
@@ -170,6 +175,9 @@ load()
     <!-- ====== HEADER ====== -->
     <header class="hero-header">
       <LangSwitcher />
+      <button class="btn-mute" :title="muted ? t.soundOff : t.soundOn" @click="toggleMute">
+        {{ muted ? t.soundOff : t.soundOn }}
+      </button>
       <div class="title-burst">{{ t.title }}</div>
       <div class="title-sub">{{ t.subtitle }}</div>
     </header>
@@ -342,6 +350,24 @@ load()
   margin-top: -16px;
   transform: rotate(1deg);
 }
+
+/* --- Mute button --- */
+.btn-mute {
+  position: absolute;
+  top: 0;
+  right: 80px;
+  z-index: 10;
+  font-size: 20px;
+  border: 2px solid #1a1a1a;
+  background: #fff;
+  padding: 2px 8px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all .15s;
+  line-height: 1;
+}
+
+.btn-mute:hover { background: #fdd835; }
 
 /* =========== INPUT PANEL =========== */
 .input-panel {
