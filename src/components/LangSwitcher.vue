@@ -30,10 +30,6 @@ const options = [
 .lang-switcher {
   display: flex;
   gap: 0;
-  position: absolute;
-  top: 0;
-  right: 0;
-  z-index: 10;
 }
 
 .lang-switcher button {

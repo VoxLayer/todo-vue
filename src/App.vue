@@ -174,10 +174,12 @@ load()
   <div class="app-shell">
     <!-- ====== HEADER ====== -->
     <header class="hero-header">
-      <LangSwitcher />
-      <button class="btn-mute" :title="muted ? t.soundOff : t.soundOn" @click="toggleMute">
-        {{ muted ? t.soundOff : t.soundOn }}
-      </button>
+      <div class="header-actions">
+        <button class="btn-mute" :title="muted ? t.soundOff : t.soundOn" @click="toggleMute">
+          {{ muted ? t.soundOff : t.soundOn }}
+        </button>
+        <LangSwitcher />
+      </div>
       <div class="title-burst">{{ t.title }}</div>
       <div class="title-sub">{{ t.subtitle }}</div>
     </header>
@@ -351,23 +353,32 @@ load()
   transform: rotate(1deg);
 }
 
-/* --- Mute button --- */
-.btn-mute {
+/* --- Header actions --- */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   position: absolute;
   top: 0;
-  right: 80px;
+  right: 0;
   z-index: 10;
-  font-size: 20px;
+}
+
+.btn-mute {
+  font-family: 'Bangers', 'Impact', sans-serif;
+  font-size: 13px;
+  letter-spacing: 1px;
   border: 2px solid #1a1a1a;
   background: #fff;
-  padding: 2px 8px;
+  color: #888;
+  padding: 4px 12px;
   cursor: pointer;
   border-radius: 6px;
   transition: all .15s;
-  line-height: 1;
+  line-height: 1.4;
 }
 
-.btn-mute:hover { background: #fdd835; }
+.btn-mute:hover { color: #1a1a1a; }
 
 /* =========== INPUT PANEL =========== */
 .input-panel {
@@ -411,6 +422,9 @@ load()
   font-family: 'Inter', sans-serif;
   background: #fffef7;
   color: #888;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 0;
 }
 
 .btn-add {
@@ -783,8 +797,49 @@ load()
 
 /* =========== RESPONSIVE =========== */
 @media (max-width: 480px) {
-  .title-burst { font-size: 52px; }
-  .title-sub { font-size: 44px; -webkit-text-stroke: 2px #1a1a1a; }
+  /* --- Header: shrink titles so buttons fit --- */
+  .hero-header { padding-top: 36px; }
+  .title-burst { font-size: 36px; letter-spacing: 2px; }
+  .title-sub { font-size: 28px; letter-spacing: 4px; -webkit-text-stroke: 2px #1a1a1a; margin-top: -6px; }
+
+  /* --- Header actions: compact --- */
+  .header-actions { gap: 4px; }
+  .btn-mute { font-size: 11px; padding: 3px 8px; border-radius: 4px; }
+
+  /* --- Input: 16px min prevents iOS auto-zoom --- */
+  .input-row input[type="text"] { font-size: 16px; padding: 10px 14px 2px; }
+  .date-input { font-size: 16px; padding: 2px 14px 8px; color: #555; max-height: 40px; }
+  .btn-add { padding: 0 14px; font-size: 20px; min-height: 60px; }
+
+  /* --- Edit date --- */
+  .edit-date { font-size: 14px; padding: 2px 6px; }
+
+  /* --- Todo items --- */
+  .todo-item { padding: 10px 10px; gap: 6px; }
+  .todo-text { font-size: 15px; }
+  .due-badge { font-size: 11px; padding: 1px 6px; }
+  .btn-del { font-size: 12px; padding: 4px 8px; }
+  .drag-handle { font-size: 15px; }
+
+  /* --- Footer --- */
   .footer-panel { flex-direction: column; align-items: stretch; text-align: center; }
+  .filters { justify-content: center; }
+  .counter { font-size: 15px; }
+  .filters button { font-size: 14px; padding: 4px 10px; }
+  .btn-clear { font-size: 12px; padding: 4px 10px; }
+
+  /* --- Undo toast: full-width on mobile --- */
+  .undo-toast {
+    left: 12px; right: 12px; bottom: 16px;
+    transform: none; font-size: 14px; padding: 10px 16px;
+  }
+  .toast-enter-from, .toast-leave-to {
+    transform: translateY(20px);
+  }
+
+  /* --- Empty state --- */
+  .empty-state { padding: 32px 16px; }
+  .empty-icon { font-size: 42px; }
+  .empty-state p { font-size: 18px; }
 }
 </style>
