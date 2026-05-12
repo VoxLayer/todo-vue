@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  base: '/todo-vue/',
   plugins: [
     vue(),
     VitePWA({
@@ -16,7 +17,7 @@ export default defineConfig({
         background_color: '#fdd835',
         display: 'standalone',
         orientation: 'portrait-primary',
-        start_url: '/',
+        start_url: '/todo-vue/',
         icons: [
           {
             src: 'pwa-192x192.png',
