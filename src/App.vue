@@ -418,13 +418,11 @@ load()
   border: none;
   outline: none;
   padding: 0 20px 10px;
-  font-size: 13px;
+  font-size: 16px;
   font-family: 'Inter', sans-serif;
   background: #fffef7;
-  color: #888;
-  -webkit-appearance: none;
-  appearance: none;
-  border-radius: 0;
+  color: #1a1a1a;
+  min-height: 32px;
 }
 
 .btn-add {
@@ -808,7 +806,7 @@ load()
 
   /* --- Input: 16px min prevents iOS auto-zoom --- */
   .input-row input[type="text"] { font-size: 16px; padding: 10px 14px 2px; }
-  .date-input { font-size: 16px; padding: 2px 14px 8px; color: #555; max-height: 40px; }
+  .date-input { padding: 2px 14px 8px; max-height: 40px; }
   .btn-add { padding: 0 14px; font-size: 20px; min-height: 60px; }
 
   /* --- Edit date --- */
