@@ -195,13 +195,16 @@ load()
           maxlength="200"
           @keydown.enter="addTodo"
         />
-        <input
-          v-model="newDueDate"
-          type="date"
-          class="date-input"
-          :min="todayStr()"
-          :title="t.dueDate"
-        />
+        <div class="date-row">
+          <span class="date-icon">📅</span>
+          <input
+            v-model="newDueDate"
+            type="date"
+            class="date-input"
+            :min="todayStr()"
+            :title="t.dueDate"
+          />
+        </div>
       </div>
       <button class="btn-add" @click="addTodo">
         <span>{{ t.addBtn }}</span>
@@ -414,14 +417,29 @@ load()
   font-weight: 400;
 }
 
+.date-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-top: 2px dashed #e0e0e0;
+  padding: 4px 16px 8px;
+  background: #fffcf0;
+}
+
+.date-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
 .date-input {
   border: none;
   outline: none;
-  padding: 0 20px 10px;
-  font-size: 16px;
+  font-size: 15px;
   font-family: 'Inter', sans-serif;
-  background: #fffef7;
+  background: transparent;
   color: #1a1a1a;
+  width: 100%;
   min-height: 32px;
 }
 
@@ -806,7 +824,8 @@ load()
 
   /* --- Input: 16px min prevents iOS auto-zoom --- */
   .input-row input[type="text"] { font-size: 16px; padding: 10px 14px 2px; }
-  .date-input { padding: 2px 14px 8px; max-height: 40px; }
+  .date-row { padding: 2px 10px 6px; }
+.date-icon { font-size: 14px; }
   .btn-add { padding: 0 14px; font-size: 20px; min-height: 60px; }
 
   /* --- Edit date --- */
