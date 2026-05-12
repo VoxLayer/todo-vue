@@ -1,9 +1,10 @@
 <script setup>
-import { ref, computed, watch, nextTick, provide, onMounted } from 'vue'
+import { ref, computed, watch, nextTick, provide, onMounted, onUnmounted } from 'vue'
 import { useI18n } from './i18n/index.js'
 import LangSwitcher from './components/LangSwitcher.vue'
 import { playSound } from './utils/sound.js'
 import { formatDate, isOverdue, isToday } from './utils/date.js'
+import Sortable from 'sortablejs'
 
 const { state, t, setLocale } = useI18n()
 provide('i18n', { state, t, setLocale })
@@ -27,8 +28,36 @@ const editDueRef = ref(null)
 const undoItem = ref(null)
 let undoTimer = 0
 
-// --- drag state ---
-const dragIdx = ref(-1)
+// --- sortable ---
+const listEl = ref(null)
+let sortable = null
+
+function initSortable() {
+  nextTick(() => {
+    const el = listEl.value?.$el || listEl.value
+    if (!el) { sortable = null; return }
+    if (sortable) sortable.destroy()
+    sortable = Sortable.create(el, {
+      handle: '.drag-handle',
+      animation: 200,
+      disabled: editingId.value !== null,
+      onEnd(evt) {
+        const { oldIndex, newIndex } = evt
+        if (oldIndex === undefined || newIndex === undefined || oldIndex === newIndex) return
+        const filtered = filteredTodos.value
+        const moved = filtered[oldIndex]
+        const target = filtered[newIndex]
+        const fromIdx = todos.value.findIndex(t => t.id === moved.id)
+        const toIdx = todos.value.findIndex(t => t.id === target.id)
+        const [item] = todos.value.splice(fromIdx, 1)
+        todos.value.splice(toIdx, 0, item)
+      },
+    })
+  })
+}
+
+watch(() => filteredTodos.value.length, initSortable)
+watch(editingId, (v) => { if (sortable) sortable.option('disabled', v !== null) })
 
 // --- load / save ---
 function load() {
@@ -138,29 +167,6 @@ function cancelEdit() {
   editingId.value = null
 }
 
-// --- drag & drop ---
-function onDragStart(idx, e) {
-  dragIdx.value = idx
-  e.dataTransfer.effectAllowed = 'move'
-  e.dataTransfer.setData('text/plain', '')
-}
-
-function onDragOver(idx, e) {
-  e.preventDefault()
-  e.dataTransfer.dropEffect = 'move'
-}
-
-function onDrop(idx) {
-  if (dragIdx.value < 0 || dragIdx.value === idx) return
-  const item = todos.value.splice(dragIdx.value, 1)[0]
-  todos.value.splice(idx, 0, item)
-  dragIdx.value = -1
-}
-
-function onDragEnd() {
-  dragIdx.value = -1
-}
-
 // --- date ---
 function todayStr() {
   return new Date().toISOString().slice(0, 10)
@@ -168,6 +174,8 @@ function todayStr() {
 
 // --- init ---
 load()
+onMounted(initSortable)
+onUnmounted(() => { if (sortable) sortable.destroy() })
 </script>
 
 <template>
@@ -219,7 +227,7 @@ load()
         <p>{{ t.emptySub }}</p>
       </div>
 
-      <TransitionGroup name="item" tag="ul" class="todo-list" v-else-if="filteredTodos.length">
+      <TransitionGroup ref="listEl" name="item" tag="ul" class="todo-list" v-else-if="filteredTodos.length">
         <li
           v-for="(todo, idx) in filteredTodos"
           :key="todo.id"
@@ -228,13 +236,7 @@ load()
             done: todo.done,
             editing: editingId === todo.id,
             overdue: !todo.done && isOverdue(todo.dueDate),
-            dragging: dragIdx === idx,
           }"
-          draggable="true"
-          @dragstart="onDragStart(idx, $event)"
-          @dragover="onDragOver(idx, $event)"
-          @drop="onDrop(idx)"
-          @dragend="onDragEnd"
         >
           <!-- Drag handle -->
           <span class="drag-handle" :title="t.dragHint">⠿</span>
@@ -508,9 +510,16 @@ load()
   color: #ccc;
   flex-shrink: 0;
   line-height: 1;
+  touch-action: none;
 }
 
 .drag-handle:active { cursor: grabbing; }
+
+/* SortableJS ghost */
+.todo-item.sortable-ghost {
+  opacity: 0.4;
+  background: #e0f7fa;
+}
 
 /* --- Checkbox --- */
 .check-wrap {

@@ -16,6 +16,7 @@ body {
   display: flex;
   justify-content: center;
   padding: 40px 16px 80px;
+  overscroll-behavior-y: contain;
 }
 
 #app {
