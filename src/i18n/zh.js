@@ -1,0 +1,15 @@
+export default {
+  lang: '中文',
+  title: 'TODO',
+  subtitle: 'HERO',
+  placeholder: '输入你的超级任务…',
+  addBtn: 'POW!',
+  emptyTitle: '还没有任务，英雄！',
+  emptySub: '在上方添加你的第一个使命吧',
+  counter: '{n} 项待办',
+  filterAll: '全部',
+  filterActive: '进行中',
+  filterCompleted: '已搞定',
+  clearBtn: 'ZAP! 清理',
+  deleteBtn: 'BAM!',
+}

@@ -1,0 +1,15 @@
+export default {
+  lang: 'English',
+  title: 'TODO',
+  subtitle: 'HERO',
+  placeholder: 'Enter your super task…',
+  addBtn: 'POW!',
+  emptyTitle: 'No tasks yet, hero!',
+  emptySub: 'Add your first mission above',
+  counter: '{n} items left',
+  filterAll: 'All',
+  filterActive: 'Active',
+  filterCompleted: 'Done',
+  clearBtn: 'ZAP! Clear',
+  deleteBtn: 'BAM!',
+}
