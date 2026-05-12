@@ -1,7 +1,9 @@
 <script setup>
-import { ref, computed, watch, nextTick, provide } from 'vue'
+import { ref, computed, watch, nextTick, provide, onMounted } from 'vue'
 import { useI18n } from './i18n/index.js'
 import LangSwitcher from './components/LangSwitcher.vue'
+import { playSound } from './utils/sound.js'
+import { formatDate, isOverdue, isToday } from './utils/date.js'
 
 const { state, t, setLocale } = useI18n()
 provide('i18n', { state, t, setLocale })
@@ -11,8 +13,17 @@ const todos = ref([])
 const filter = ref('all')
 const editingId = ref(null)
 const newText = ref('')
+const newDueDate = ref('')
 const inputRef = ref(null)
 const editInputRef = ref(null)
+const editDueRef = ref(null)
+
+// --- undo state ---
+const undoItem = ref(null)
+let undoTimer = 0
+
+// --- drag state ---
+const dragIdx = ref(-1)
 
 // --- load / save ---
 function load() {
@@ -22,7 +33,8 @@ function load() {
   } catch { todos.value = [] }
 }
 function save() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(todos.value))
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(todos.value)) }
+  catch (e) { console.warn('Save failed:', e) }
 }
 watch(todos, save, { deep: true })
 
@@ -34,40 +46,75 @@ const filteredTodos = computed(() => {
 })
 
 const remaining = computed(() => todos.value.filter(t => !t.done).length)
+const overdueCount = computed(() => todos.value.filter(t => !t.done && isOverdue(t.dueDate)).length)
 const hasCompleted = computed(() => todos.value.some(t => t.done))
 const hasAny = computed(() => todos.value.length > 0)
 
-// --- actions ---
+// --- id ---
 let nextId = 1
 function uid() {
   while (todos.value.some(t => t.id === nextId)) nextId++
   return nextId++
 }
 
+// --- actions ---
 function addTodo() {
   const text = newText.value.trim()
   if (!text) return
-  todos.value.push({ id: uid(), text, done: false })
+  todos.value.push({
+    id: uid(),
+    text,
+    done: false,
+    dueDate: newDueDate.value || null,
+  })
   newText.value = ''
+  newDueDate.value = ''
+  playSound('pow')
   nextTick(() => inputRef.value?.focus())
 }
 
 function toggle(id) {
   const t = todos.value.find(t => t.id === id)
-  if (t) t.done = !t.done
+  if (t) { t.done = !t.done; playSound('pop') }
 }
 
 function remove(id) {
-  todos.value = todos.value.filter(t => t.id !== id)
+  const idx = todos.value.findIndex(t => t.id === id)
+  if (idx === -1) return
+  const [item] = todos.value.splice(idx, 1)
+  playSound('bam')
+  showUndo(item)
 }
 
 function clearCompleted() {
+  const count = todos.value.filter(t => t.done).length
+  if (!count) return
   todos.value = todos.value.filter(t => !t.done)
+  playSound('zap')
 }
 
+// --- undo ---
+function showUndo(item) {
+  clearTimeout(undoTimer)
+  undoItem.value = item
+  undoTimer = setTimeout(() => { undoItem.value = null }, 3000)
+}
+
+function undoRemove() {
+  if (!undoItem.value) return
+  todos.value.push(undoItem.value)
+  undoItem.value = null
+  clearTimeout(undoTimer)
+  playSound('pop')
+}
+
+// --- edit ---
 function startEdit(id) {
   editingId.value = id
-  nextTick(() => editInputRef.value?.focus())
+  nextTick(() => {
+    editInputRef.value?.focus()
+    editDueRef.value?._value && (editDueRef.value.value = editDueRef.value._value)
+  })
 }
 
 function finishEdit(todo) {
@@ -75,13 +122,43 @@ function finishEdit(todo) {
   if (el) {
     const v = el.value.trim()
     if (v) todo.text = v
-    else remove(todo.id)
+    else { remove(todo.id); editingId.value = null; return }
   }
+  const dueEl = editDueRef.value
+  if (dueEl) todo.dueDate = dueEl.value || null
   editingId.value = null
 }
 
 function cancelEdit() {
   editingId.value = null
+}
+
+// --- drag & drop ---
+function onDragStart(idx, e) {
+  dragIdx.value = idx
+  e.dataTransfer.effectAllowed = 'move'
+  e.dataTransfer.setData('text/plain', '')
+}
+
+function onDragOver(idx, e) {
+  e.preventDefault()
+  e.dataTransfer.dropEffect = 'move'
+}
+
+function onDrop(idx) {
+  if (dragIdx.value < 0 || dragIdx.value === idx) return
+  const item = todos.value.splice(dragIdx.value, 1)[0]
+  todos.value.splice(idx, 0, item)
+  dragIdx.value = -1
+}
+
+function onDragEnd() {
+  dragIdx.value = -1
+}
+
+// --- date ---
+function todayStr() {
+  return new Date().toISOString().slice(0, 10)
 }
 
 // --- init ---
@@ -99,14 +176,23 @@ load()
 
     <!-- ====== INPUT ====== -->
     <div class="input-panel">
-      <input
-        ref="inputRef"
-        v-model="newText"
-        type="text"
-        :placeholder="t.placeholder"
-        maxlength="200"
-        @keydown.enter="addTodo"
-      />
+      <div class="input-row">
+        <input
+          ref="inputRef"
+          v-model="newText"
+          type="text"
+          :placeholder="t.placeholder"
+          maxlength="200"
+          @keydown.enter="addTodo"
+        />
+        <input
+          v-model="newDueDate"
+          type="date"
+          class="date-input"
+          :min="todayStr()"
+          :title="t.dueDate"
+        />
+      </div>
       <button class="btn-add" @click="addTodo">
         <span>{{ t.addBtn }}</span>
       </button>
@@ -122,11 +208,24 @@ load()
 
       <TransitionGroup name="item" tag="ul" class="todo-list" v-else-if="filteredTodos.length">
         <li
-          v-for="todo in filteredTodos"
+          v-for="(todo, idx) in filteredTodos"
           :key="todo.id"
           class="todo-item"
-          :class="{ done: todo.done, editing: editingId === todo.id }"
+          :class="{
+            done: todo.done,
+            editing: editingId === todo.id,
+            overdue: !todo.done && isOverdue(todo.dueDate),
+            dragging: dragIdx === idx,
+          }"
+          draggable="true"
+          @dragstart="onDragStart(idx, $event)"
+          @dragover="onDragOver(idx, $event)"
+          @drop="onDrop(idx)"
+          @dragend="onDragEnd"
         >
+          <!-- Drag handle -->
+          <span class="drag-handle" :title="t.dragHint">⠿</span>
+
           <!-- Checkbox -->
           <label class="check-wrap">
             <input
@@ -148,12 +247,23 @@ load()
               @keydown.escape="cancelEdit"
               @blur="finishEdit(todo)"
             />
+            <input
+              ref="editDueRef"
+              :value="todo.dueDate || ''"
+              type="date"
+              class="edit-date"
+              :min="todayStr()"
+              :title="t.dueDate"
+            />
           </template>
 
           <!-- View mode -->
           <template v-else>
             <span class="todo-text" @dblclick="startEdit(todo.id)">
               {{ todo.text }}
+              <span v-if="todo.dueDate" class="due-badge" :class="{ overdue: !todo.done && isOverdue(todo.dueDate), today: !todo.done && isToday(todo.dueDate) }">
+                {{ formatDate(todo.dueDate) }}
+              </span>
             </span>
             <button class="btn-del" @click="remove(todo.id)">{{ t.deleteBtn }}</button>
           </template>
@@ -163,7 +273,8 @@ load()
 
     <!-- ====== FOOTER ====== -->
     <div v-if="hasAny" class="footer-panel">
-      <span class="counter">{{ t.counter.replace('{n}', remaining) }}</span>
+      <span class="counter">{{ t.counter.replaceAll('{n}', remaining) }}</span>
+      <span v-if="overdueCount" class="counter overdue">{{ t.overdueCounter.replaceAll('{n}', overdueCount) }}</span>
       <div class="filters">
         <button
           v-for="f in [
@@ -182,6 +293,14 @@ load()
         {{ t.clearBtn }}
       </button>
     </div>
+
+    <!-- ====== UNDO TOAST ====== -->
+    <Transition name="toast">
+      <div v-if="undoItem" class="undo-toast" @click="undoRemove">
+        <span>{{ t.undoMsg }}</span>
+        <button class="btn-undo">{{ t.undo }}</button>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -235,11 +354,17 @@ load()
   transform: rotate(-0.5deg);
 }
 
-.input-panel input {
+.input-row {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.input-row input[type="text"] {
   flex: 1;
   border: none;
   outline: none;
-  padding: 16px 20px;
+  padding: 12px 20px 4px;
   font-size: 18px;
   font-family: 'Inter', sans-serif;
   font-weight: 700;
@@ -247,9 +372,19 @@ load()
   color: #1a1a1a;
 }
 
-.input-panel input::placeholder {
+.input-row input::placeholder {
   color: #bbb;
   font-weight: 400;
+}
+
+.date-input {
+  border: none;
+  outline: none;
+  padding: 0 20px 10px;
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  background: #fffef7;
+  color: #888;
 }
 
 .btn-add {
@@ -266,13 +401,8 @@ load()
   transition: background .1s;
 }
 
-.btn-add:hover {
-  background: #00acc1;
-}
-
-.btn-add:active {
-  transform: scale(0.94);
-}
+.btn-add:hover { background: #00acc1; }
+.btn-add:active { transform: scale(0.94); }
 
 /* =========== LIST PANEL =========== */
 .list-panel {
@@ -285,27 +415,22 @@ load()
   margin-bottom: 16px;
 }
 
-.todo-list {
-  list-style: none;
-}
+.todo-list { list-style: none; }
 
 /* =========== TODO ITEM =========== */
 .todo-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 18px;
+  gap: 10px;
+  padding: 14px 14px;
   border-bottom: 2px dashed #ddd;
-  transition: background .15s;
+  transition: background .15s, opacity .2s;
+  user-select: none;
 }
 
-.todo-item:last-child {
-  border-bottom: none;
-}
-
-.todo-item:hover {
-  background: #fffde7;
-}
+.todo-item:last-child { border-bottom: none; }
+.todo-item:hover { background: #fffde7; }
+.todo-item.dragging { opacity: 0.5; background: #e0f7fa; }
 
 .todo-item.done .todo-text {
   text-decoration: line-through;
@@ -315,7 +440,23 @@ load()
   font-style: italic;
 }
 
-/* --- Custom checkbox --- */
+.todo-item.overdue {
+  border-left: 4px solid #e53935;
+  padding-left: 10px;
+}
+
+/* --- Drag handle --- */
+.drag-handle {
+  cursor: grab;
+  font-size: 18px;
+  color: #ccc;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.drag-handle:active { cursor: grabbing; }
+
+/* --- Checkbox --- */
 .check-wrap {
   position: relative;
   width: 26px;
@@ -365,6 +506,38 @@ load()
   word-break: break-all;
   cursor: default;
   color: #1a1a1a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.due-badge {
+  font-family: 'Bangers', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  background: #fdd835;
+  color: #1a1a1a;
+  border: 2px solid #1a1a1a;
+  padding: 1px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.due-badge.overdue {
+  background: #e53935;
+  color: #fff;
+  animation: pulse 1s infinite;
+}
+
+.due-badge.today {
+  background: #ff9800;
+  color: #fff;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
 }
 
 .edit-input {
@@ -377,6 +550,15 @@ load()
   background: transparent;
   border-bottom: 4px solid #e53935;
   padding: 2px 0;
+}
+
+.edit-date {
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  border: 2px solid #1a1a1a;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #fffef7;
 }
 
 /* --- Delete button --- */
@@ -405,6 +587,59 @@ load()
   box-shadow: none;
 }
 
+/* =========== UNDO TOAST =========== */
+.undo-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a1a;
+  color: #fdd835;
+  font-family: 'Bangers', 'Impact', sans-serif;
+  font-size: 18px;
+  letter-spacing: 1px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  z-index: 100;
+  transition: background .1s;
+}
+
+.undo-toast:hover { background: #333; }
+
+.btn-undo {
+  font-family: 'Bangers', 'Impact', sans-serif;
+  font-size: 16px;
+  letter-spacing: 1px;
+  border: 2px solid #fdd835;
+  background: transparent;
+  color: #fdd835;
+  padding: 4px 14px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all .1s;
+}
+
+.btn-undo:hover {
+  background: #fdd835;
+  color: #1a1a1a;
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition: all .3s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
+}
+
 /* =========== TRANSITIONS =========== */
 .item-enter-active,
 .item-leave-active {
@@ -421,9 +656,7 @@ load()
   transform: translateX(30px) scale(0.9) rotate(3deg);
 }
 
-.item-leave-active {
-  position: absolute;
-}
+.item-leave-active { position: absolute; }
 
 /* =========== EMPTY STATE =========== */
 .empty-state {
@@ -431,10 +664,7 @@ load()
   padding: 48px 20px;
 }
 
-.empty-icon {
-  font-size: 56px;
-  margin-bottom: 12px;
-}
+.empty-icon { font-size: 56px; margin-bottom: 12px; }
 
 .empty-state p {
   font-family: 'Bangers', 'Impact', sans-serif;
@@ -471,10 +701,11 @@ load()
   letter-spacing: 1px;
 }
 
-.filters {
-  display: flex;
-  gap: 4px;
+.counter.overdue {
+  color: #e53935;
 }
+
+.filters { display: flex; gap: 4px; }
 
 .filters button {
   font-family: 'Bangers', 'Impact', sans-serif;
@@ -489,10 +720,7 @@ load()
   border-radius: 4px;
 }
 
-.filters button:hover {
-  border-color: #1a1a1a;
-  color: #1a1a1a;
-}
+.filters button:hover { border-color: #1a1a1a; color: #1a1a1a; }
 
 .filters button.active {
   background: #fdd835;
