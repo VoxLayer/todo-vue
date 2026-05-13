@@ -163,21 +163,22 @@ function saveEdit(todo) {
   editingId.value = null
 }
 
-function onEditFocusOut(todo, e) {
-  nextTick(() => {
-    if (editingId.value !== todo.id) return
-    const active = document.activeElement
-    if (active === editInputRef.value || active === editDueRef.value) return
-    saveEdit(todo)
-  })
-}
-
 function finishEdit(todo) {
   saveEdit(todo)
 }
 
 function cancelEdit() {
   editingId.value = null
+}
+
+// Click outside edit zone → save & exit
+function onClickOutside(e) {
+  if (!editingId.value) return
+  const zone = document.querySelector('.edit-zone')
+  if (zone && !zone.contains(e.target)) {
+    const todo = todos.value.find(t => t.id === editingId.value)
+    if (todo) saveEdit(todo)
+  }
 }
 
 // --- date ---
@@ -187,8 +188,16 @@ function todayStr() {
 
 // --- init ---
 load()
-onMounted(initSortable)
-onUnmounted(() => { if (sortable) sortable.destroy() })
+onMounted(() => {
+  initSortable()
+  document.addEventListener('mousedown', onClickOutside)
+  document.addEventListener('touchstart', onClickOutside)
+})
+onUnmounted(() => {
+  if (sortable) sortable.destroy()
+  document.removeEventListener('mousedown', onClickOutside)
+  document.removeEventListener('touchstart', onClickOutside)
+})
 </script>
 
 <template>
@@ -268,7 +277,6 @@ onUnmounted(() => { if (sortable) sortable.destroy() })
           <div
             v-if="editingId === todo.id"
             class="edit-zone"
-            @focusout="onEditFocusOut(todo, $event)"
             @keydown.escape="cancelEdit"
           >
             <input
