@@ -151,7 +151,7 @@ function startEdit(id) {
   })
 }
 
-function finishEdit(todo) {
+function saveEdit(todo) {
   const el = editInputRef.value
   if (el) {
     const v = el.value.trim()
@@ -161,6 +161,19 @@ function finishEdit(todo) {
   const dueEl = editDueRef.value
   if (dueEl) todo.dueDate = dueEl.value || null
   editingId.value = null
+}
+
+function onEditFocusOut(todo, e) {
+  nextTick(() => {
+    if (editingId.value !== todo.id) return
+    const active = document.activeElement
+    if (active === editInputRef.value || active === editDueRef.value) return
+    saveEdit(todo)
+  })
+}
+
+function finishEdit(todo) {
+  saveEdit(todo)
 }
 
 function cancelEdit() {
@@ -252,15 +265,18 @@ onUnmounted(() => { if (sortable) sortable.destroy() })
           </label>
 
           <!-- Edit mode -->
-          <template v-if="editingId === todo.id">
+          <div
+            v-if="editingId === todo.id"
+            class="edit-zone"
+            @focusout="onEditFocusOut(todo, $event)"
+            @keydown.escape="cancelEdit"
+          >
             <input
               ref="editInputRef"
               class="edit-input"
               :value="todo.text"
               maxlength="200"
               @keydown.enter="finishEdit(todo)"
-              @keydown.escape="cancelEdit"
-              @blur="finishEdit(todo)"
             />
             <input
               ref="editDueRef"
@@ -270,7 +286,7 @@ onUnmounted(() => { if (sortable) sortable.destroy() })
               :min="todayStr()"
               :title="t.dueDate"
             />
-          </template>
+          </div>
 
           <!-- View mode -->
           <template v-else>
@@ -605,6 +621,13 @@ onUnmounted(() => { if (sortable) sortable.destroy() })
   50% { transform: scale(1.08); }
 }
 
+.edit-zone {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
 .edit-input {
   flex: 1;
   font-size: 17px;
@@ -837,7 +860,8 @@ onUnmounted(() => { if (sortable) sortable.destroy() })
 .date-icon { font-size: 14px; }
   .btn-add { padding: 0 14px; font-size: 20px; min-height: 60px; }
 
-  /* --- Edit date --- */
+  /* --- Edit mode --- */
+  .edit-zone { gap: 4px; }
   .edit-date { font-size: 14px; padding: 2px 6px; }
 
   /* --- Todo items --- */
