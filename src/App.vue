@@ -172,10 +172,10 @@ function cancelEdit() {
 }
 
 // Click outside edit zone → save & exit
-function onClickOutside(e) {
+function onAppClick(e) {
   if (!editingId.value) return
-  const zone = document.querySelector('.edit-zone')
-  if (zone && !zone.contains(e.target)) {
+  const zone = e.currentTarget.querySelector('.edit-zone')
+  if (!zone || !zone.contains(e.target)) {
     const todo = todos.value.find(t => t.id === editingId.value)
     if (todo) saveEdit(todo)
   }
@@ -188,20 +188,12 @@ function todayStr() {
 
 // --- init ---
 load()
-onMounted(() => {
-  initSortable()
-  document.addEventListener('mousedown', onClickOutside)
-  document.addEventListener('touchstart', onClickOutside)
-})
-onUnmounted(() => {
-  if (sortable) sortable.destroy()
-  document.removeEventListener('mousedown', onClickOutside)
-  document.removeEventListener('touchstart', onClickOutside)
-})
+onMounted(initSortable)
+onUnmounted(() => { if (sortable) sortable.destroy() })
 </script>
 
 <template>
-  <div class="app-shell">
+  <div class="app-shell" @click="onAppClick">
     <!-- ====== HEADER ====== -->
     <header class="hero-header">
       <div class="header-actions">
