@@ -19,4 +19,9 @@ export default {
   dragHint: '拖拽排序',
   soundOn: '🔊',
   soundOff: '🔇',
+  notifyTitle: 'Todo Hero',
+  notifyBody1: '你有 1 项任务今天到期！',
+  notifyBodyN: '你有 {n} 项任务今天到期！',
+  notifyEnable: '🔔',
+  notifyEnabled: '🔔',
 }

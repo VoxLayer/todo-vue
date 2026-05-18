@@ -19,4 +19,9 @@ export default {
   dragHint: 'Drag to reorder',
   soundOn: '🔊',
   soundOff: '🔇',
+  notifyTitle: 'Todo Hero',
+  notifyBody1: 'You have 1 task due today!',
+  notifyBodyN: 'You have {n} tasks due today!',
+  notifyEnable: '🔔',
+  notifyEnabled: '🔔',
 }

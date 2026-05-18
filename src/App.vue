@@ -5,9 +5,21 @@ import LangSwitcher from './components/LangSwitcher.vue'
 import { playSound } from './utils/sound.js'
 import { formatDate, isOverdue, isToday } from './utils/date.js'
 import Sortable from 'sortablejs'
+import { isSupported, isGranted, requestPermission, checkAndNotify } from './utils/notify.js'
 
 const { state, t, setLocale } = useI18n()
 provide('i18n', { state, t, setLocale })
+
+// --- notifications ---
+const notifySupported = isSupported()
+const notifyGranted = ref(isGranted())
+
+async function toggleNotify() {
+  if (notifyGranted.value) return
+  const result = await requestPermission()
+  notifyGranted.value = result === 'granted'
+  if (result === 'granted') checkAndNotify(todos.value)
+}
 
 const MUTE_KEY = 'todo_hero_muted'
 const muted = ref(localStorage.getItem(MUTE_KEY) === 'true')
@@ -186,10 +198,35 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10)
 }
 
+// --- morning reminder ---
+let morningTimer = 0
+
+function scheduleMorning() {
+  clearTimeout(morningTimer)
+  const now = new Date()
+  const target = new Date(now)
+  target.setHours(6, 0, 0, 0)
+  if (target <= now) target.setDate(target.getDate() + 1)
+  morningTimer = setTimeout(() => {
+    checkAndNotify(todos.value)
+    morningTimer = setInterval(() => checkAndNotify(todos.value), 86400000)
+  }, target.getTime() - now.getTime())
+}
+
 // --- init ---
 load()
-onMounted(initSortable)
-onUnmounted(() => { if (sortable) sortable.destroy() })
+onMounted(() => {
+  initSortable()
+  if (notifyGranted.value) {
+    checkAndNotify(todos.value)
+    scheduleMorning()
+  }
+})
+onUnmounted(() => {
+  if (sortable) sortable.destroy()
+  clearTimeout(morningTimer)
+  clearInterval(morningTimer)
+})
 </script>
 
 <template>
@@ -197,6 +234,9 @@ onUnmounted(() => { if (sortable) sortable.destroy() })
     <!-- ====== HEADER ====== -->
     <header class="hero-header">
       <div class="header-actions">
+        <button v-if="notifySupported" class="btn-mute" :title="t.notifyEnable" @click="toggleNotify">
+          {{ t.notifyEnable }}
+        </button>
         <button class="btn-mute" :title="muted ? t.soundOff : t.soundOn" @click="toggleMute">
           {{ muted ? t.soundOff : t.soundOn }}
         </button>
