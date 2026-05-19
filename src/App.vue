@@ -411,7 +411,7 @@ onUnmounted(() => {
 }
 
 .btn-mute {
-  font-family: 'Bangers', 'Impact', sans-serif;
+  font-family: 'Bangers', 'Impact', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
   font-size: 13px;
   letter-spacing: 1px;
   border: 2px solid #1a1a1a;
