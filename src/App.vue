@@ -125,35 +125,24 @@ function undoRemove() {
 // --- edit ---
 function toggleEdit(todo) {
   if (editingId.value === todo.id) {
-    saveEdit(todo)
+    // Save and exit
+    const el = editInputRef.value
+    if (el) {
+      const v = el.value.trim()
+      if (v) todo.text = v
+      else { remove(todo.id); editingId.value = null; return }
+    }
+    const dueEl = editDueRef.value
+    if (dueEl) todo.dueDate = dueEl.value || null
+    editingId.value = null
     return
   }
+  // Enter edit mode
   editingId.value = todo.id
   nextTick(() => {
     editInputRef.value?.focus()
     editDueRef.value?._value && (editDueRef.value.value = editDueRef.value._value)
   })
-}
-
-function saveEdit(todo) {
-  const el = editInputRef.value
-  if (el) {
-    const v = el.value.trim()
-    if (v) todo.text = v
-    else { remove(todo.id); editingId.value = null; return }
-  }
-  const dueEl = editDueRef.value
-  if (dueEl) todo.dueDate = dueEl.value || null
-  editingId.value = null
-}
-
-function onEditBlur(todo) {
-  setTimeout(() => {
-    if (editingId.value !== todo.id) return
-    const active = document.activeElement
-    if (active && active.closest('.edit-zone')) return
-    saveEdit(todo)
-  }, 120)
 }
 
 function cancelEdit() {
@@ -281,8 +270,7 @@ onUnmounted(() => {
               class="edit-input"
               :value="todo.text"
               maxlength="200"
-              @keydown.enter="saveEdit(todo)"
-              @blur="onEditBlur(todo)"
+              @keydown.enter="toggleEdit(todo)"
             />
             <input
               ref="editDueRef"
@@ -291,7 +279,6 @@ onUnmounted(() => {
               class="edit-date"
               :min="todayStr()"
               :title="t.dueDate"
-              @blur="onEditBlur(todo)"
             />
           </div>
 
