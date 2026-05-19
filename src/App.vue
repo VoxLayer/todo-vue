@@ -175,20 +175,17 @@ function saveEdit(todo) {
   editingId.value = null
 }
 
-function finishEdit(todo) {
-  saveEdit(todo)
+function onEditBlur(todo) {
+  setTimeout(() => {
+    if (editingId.value !== todo.id) return
+    const active = document.activeElement
+    if (active === editInputRef.value || active === editDueRef.value) return
+    saveEdit(todo)
+  }, 120)
 }
 
 function cancelEdit() {
   editingId.value = null
-}
-
-// Click outside edit zone → save & exit
-function onClickOutside(e) {
-  if (!editingId.value) return
-  if (e.target.closest('.edit-zone')) return
-  const todo = todos.value.find(t => t.id === editingId.value)
-  if (todo) saveEdit(todo)
 }
 
 // --- date ---
@@ -215,8 +212,6 @@ function scheduleMorning() {
 load()
 onMounted(() => {
   initSortable()
-  document.addEventListener('mousedown', onClickOutside)
-  document.addEventListener('touchstart', onClickOutside)
   if (notifyGranted.value) {
     checkAndNotify(todos.value)
     scheduleMorning()
@@ -224,8 +219,6 @@ onMounted(() => {
 })
 onUnmounted(() => {
   if (sortable) sortable.destroy()
-  document.removeEventListener('mousedown', onClickOutside)
-  document.removeEventListener('touchstart', onClickOutside)
   clearTimeout(morningTimer)
   clearInterval(morningTimer)
 })
@@ -318,7 +311,8 @@ onUnmounted(() => {
               class="edit-input"
               :value="todo.text"
               maxlength="200"
-              @keydown.enter="finishEdit(todo)"
+              @keydown.enter="saveEdit(todo)"
+              @blur="onEditBlur(todo)"
             />
             <input
               ref="editDueRef"
@@ -327,6 +321,7 @@ onUnmounted(() => {
               class="edit-date"
               :min="todayStr()"
               :title="t.dueDate"
+              @blur="onEditBlur(todo)"
             />
           </div>
 
