@@ -268,9 +268,9 @@ onUnmounted(() => {
           }"
         >
           <!-- Edit trigger -->
-          <button class="edit-trigger" :title="t.editHint"
+          <button class="edit-trigger" :class="{ active: editingId === todo.id }" :title="t.editHint"
             @mousedown.stop="toggleEdit(todo)"
-            @touchstart.stop.prevent="toggleEdit(todo)">✎</button>
+            @touchstart.stop.prevent="toggleEdit(todo)">{{ editingId === todo.id ? '✍' : '✎' }}</button>
 
           <!-- Checkbox -->
           <label class="check-wrap">
@@ -549,6 +549,7 @@ onUnmounted(() => {
 }
 
 .edit-trigger:hover { color: #00bcd4; }
+.edit-trigger.active { color: #e53935; }
 
 /* --- Checkbox --- */
 .check-wrap {
