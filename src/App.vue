@@ -123,8 +123,12 @@ function undoRemove() {
 }
 
 // --- edit ---
-function startEdit(id) {
-  editingId.value = id
+function toggleEdit(todo) {
+  if (editingId.value === todo.id) {
+    saveEdit(todo)
+    return
+  }
+  editingId.value = todo.id
   nextTick(() => {
     editInputRef.value?.focus()
     editDueRef.value?._value && (editDueRef.value.value = editDueRef.value._value)
@@ -147,7 +151,7 @@ function onEditBlur(todo) {
   setTimeout(() => {
     if (editingId.value !== todo.id) return
     const active = document.activeElement
-    if (active === editInputRef.value || active === editDueRef.value) return
+    if (active && active.closest('.edit-zone')) return
     saveEdit(todo)
   }, 120)
 }
@@ -254,7 +258,7 @@ onUnmounted(() => {
           }"
         >
           <!-- Edit trigger -->
-          <button class="edit-trigger" :title="t.editHint" @click="startEdit(todo.id)">✎</button>
+          <button class="edit-trigger" :title="t.editHint" @click="toggleEdit(todo)">✎</button>
 
           <!-- Checkbox -->
           <label class="check-wrap">
