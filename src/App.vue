@@ -32,8 +32,8 @@ const editingId = ref(null)
 const newText = ref('')
 const newDueDate = ref('')
 const inputRef = ref(null)
-const editInputRef = ref(null)
-const editDueRef = ref(null)
+let editInputRef = null
+let editDueRef = null
 
 // --- undo state ---
 const undoItem = ref(null)
@@ -126,13 +126,13 @@ function undoRemove() {
 function toggleEdit(todo) {
   if (editingId.value === todo.id) {
     // Save and exit
-    const el = editInputRef.value
+    const el = editInputRef
     if (el) {
       const v = el.value.trim()
       if (v) todo.text = v
       else { remove(todo.id); editingId.value = null; return }
     }
-    const dueEl = editDueRef.value
+    const dueEl = editDueRef
     if (dueEl) todo.dueDate = dueEl.value || null
     editingId.value = null
     return
@@ -142,19 +142,19 @@ function toggleEdit(todo) {
     // Another todo is being edited — save it first
     const prev = todos.value.find(t => t.id === editingId.value)
     if (prev) {
-      const el = editInputRef.value
+      const el = editInputRef
       if (el) {
         const v = el.value.trim()
         if (v) prev.text = v
       }
-      const dueEl = editDueRef.value
+      const dueEl = editDueRef
       if (dueEl) prev.dueDate = dueEl.value || null
     }
   }
   editingId.value = todo.id
   nextTick(() => {
-    editInputRef.value?.focus()
-    editDueRef.value?._value && (editDueRef.value.value = editDueRef.value._value)
+    editInputRef?.focus()
+    editDueRef?._value && (editDueRef.value = editDueRef._value)
   })
 }
 
@@ -288,14 +288,14 @@ onUnmounted(() => {
             class="edit-zone"
           >
             <input
-              ref="editInputRef"
+              :ref="(el) => editInputRef = el"
               class="edit-input"
               :value="todo.text"
               maxlength="200"
               @keydown.enter="toggleEdit(todo)"
             />
             <input
-              ref="editDueRef"
+              :ref="(el) => editDueRef = el"
               :value="todo.dueDate || ''"
               type="date"
               class="edit-date"
