@@ -138,6 +138,19 @@ function toggleEdit(todo) {
     return
   }
   // Enter edit mode
+  if (editingId.value !== null) {
+    // Another todo is being edited — save it first
+    const prev = todos.value.find(t => t.id === editingId.value)
+    if (prev) {
+      const el = editInputRef.value
+      if (el) {
+        const v = el.value.trim()
+        if (v) prev.text = v
+      }
+      const dueEl = editDueRef.value
+      if (dueEl) prev.dueDate = dueEl.value || null
+    }
+  }
   editingId.value = todo.id
   nextTick(() => {
     editInputRef.value?.focus()
@@ -147,6 +160,12 @@ function toggleEdit(todo) {
 
 function cancelEdit() {
   editingId.value = null
+}
+
+function onDocKeydown(e) {
+  if (e.key === 'Escape' && editingId.value !== null) {
+    cancelEdit()
+  }
 }
 
 // --- date ---
@@ -172,12 +191,14 @@ function scheduleMorning() {
 // --- init ---
 load()
 onMounted(() => {
+  document.addEventListener('keydown', onDocKeydown)
   if (notifyGranted.value) {
     checkAndNotify(todos.value)
     scheduleMorning()
   }
 })
 onUnmounted(() => {
+  document.removeEventListener('keydown', onDocKeydown)
   clearTimeout(morningTimer)
   clearInterval(morningTimer)
 })
@@ -247,7 +268,9 @@ onUnmounted(() => {
           }"
         >
           <!-- Edit trigger -->
-          <button class="edit-trigger" :title="t.editHint" @click="toggleEdit(todo)">✎</button>
+          <button class="edit-trigger" :title="t.editHint"
+            @mousedown.stop="toggleEdit(todo)"
+            @touchstart.stop.prevent="toggleEdit(todo)">✎</button>
 
           <!-- Checkbox -->
           <label class="check-wrap">
@@ -263,7 +286,6 @@ onUnmounted(() => {
           <div
             v-if="editingId === todo.id"
             class="edit-zone"
-            @keydown.escape="cancelEdit"
           >
             <input
               ref="editInputRef"
