@@ -24,4 +24,6 @@ export default {
   notifyBodyN: 'You have {n} tasks due today!',
   notifyEnable: '🔔',
   notifyEnabled: '🔔',
+  notifyGranted: 'Notifications on',
+  notifyUnsupported: 'Notifications not supported',
 }

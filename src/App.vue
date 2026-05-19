@@ -12,8 +12,17 @@ provide('i18n', { state, t, setLocale })
 // --- notifications ---
 const notifySupported = isSupported()
 const notifyGranted = ref(isGranted())
+const notifyIcon = computed(() => {
+  if (!notifySupported) return '🔕'
+  return notifyGranted.value ? t.notifyEnabled : t.notifyEnable
+})
+const notifyTitle = computed(() => {
+  if (!notifySupported) return t.notifyUnsupported
+  return notifyGranted.value ? t.notifyGranted : t.notifyEnable
+})
 
 async function toggleNotify() {
+  if (!notifySupported) return
   if (notifyGranted.value) return
   const result = await requestPermission()
   notifyGranted.value = result === 'granted'
@@ -209,8 +218,8 @@ onUnmounted(() => {
     <!-- ====== HEADER ====== -->
     <header class="hero-header">
       <div class="header-actions">
-        <button v-if="notifySupported" class="btn-mute" :title="t.notifyEnable" @click="toggleNotify">
-          {{ t.notifyEnable }}
+        <button class="btn-mute notify-btn" :class="{ disabled: !notifySupported, active: notifyGranted }" :title="notifyTitle" @click="toggleNotify">
+          {{ notifyIcon }}
         </button>
         <button class="btn-mute" :title="muted ? t.soundOff : t.soundOn" @click="toggleMute">
           {{ muted ? t.soundOff : t.soundOn }}
@@ -416,6 +425,9 @@ onUnmounted(() => {
 }
 
 .btn-mute:hover { color: #1a1a1a; }
+.notify-btn.disabled { color: #ccc; cursor: not-allowed; opacity: 0.6; }
+.notify-btn.disabled:hover { color: #ccc; }
+.notify-btn.active { color: #00bcd4; border-color: #00bcd4; }
 
 /* =========== INPUT PANEL =========== */
 .input-panel {

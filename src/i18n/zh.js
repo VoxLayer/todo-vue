@@ -24,4 +24,6 @@ export default {
   notifyBodyN: '你有 {n} 项任务今天到期！',
   notifyEnable: '🔔',
   notifyEnabled: '🔔',
+  notifyGranted: '通知已开启',
+  notifyUnsupported: '当前浏览器不支持系统通知',
 }
