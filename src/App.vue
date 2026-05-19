@@ -183,14 +183,11 @@ function cancelEdit() {
   editingId.value = null
 }
 
-// Click outside edit zone → save & exit
-function onAppClick(e) {
+// Click backdrop → save & exit
+function onBackdropClick() {
   if (!editingId.value) return
-  const zone = e.currentTarget.querySelector('.edit-zone')
-  if (!zone || !zone.contains(e.target)) {
-    const todo = todos.value.find(t => t.id === editingId.value)
-    if (todo) saveEdit(todo)
-  }
+  const todo = todos.value.find(t => t.id === editingId.value)
+  if (todo) saveEdit(todo)
 }
 
 // --- date ---
@@ -230,7 +227,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="app-shell" @click="onAppClick">
+  <div class="app-shell">
     <!-- ====== HEADER ====== -->
     <header class="hero-header">
       <div class="header-actions">
@@ -364,6 +361,9 @@ onUnmounted(() => {
         {{ t.clearBtn }}
       </button>
     </div>
+
+    <!-- ====== EDIT BACKDROP ====== -->
+    <div v-if="editingId !== null" class="edit-backdrop" @click="onBackdropClick"></div>
 
     <!-- ====== UNDO TOAST ====== -->
     <Transition name="toast">
@@ -666,6 +666,15 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   flex: 1;
+  position: relative;
+  z-index: 51;
+}
+
+.edit-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: transparent;
 }
 
 .edit-input {
