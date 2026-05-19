@@ -25,5 +25,7 @@ export default {
   notifyEnable: '🔔',
   notifyEnabled: '🔔',
   notifyGranted: '通知已开启',
+  notifyBell: '🔔',
+  notifyBellOff: '🔕',
   notifyUnsupported: '当前浏览器不支持系统通知',
 }

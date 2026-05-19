@@ -12,10 +12,6 @@ provide('i18n', { state, t, setLocale })
 // --- notifications ---
 const notifySupported = isSupported()
 const notifyGranted = ref(isGranted())
-const notifyIcon = computed(() => {
-  if (!notifySupported) return '🔕'
-  return notifyGranted.value ? t.notifyEnabled : t.notifyEnable
-})
 const notifyTitle = computed(() => {
   if (!notifySupported) return t.notifyUnsupported
   return notifyGranted.value ? t.notifyGranted : t.notifyEnable
@@ -218,8 +214,8 @@ onUnmounted(() => {
     <!-- ====== HEADER ====== -->
     <header class="hero-header">
       <div class="header-actions">
-        <button class="btn-mute notify-btn" :class="{ disabled: !notifySupported, active: notifyGranted }" :title="notifyTitle" @click="toggleNotify">
-          {{ notifyIcon }}
+        <button class="btn-mute" :title="notifyTitle" @click="toggleNotify">
+          {{ notifySupported ? t.notifyBell : t.notifyBellOff }}
         </button>
         <button class="btn-mute" :title="muted ? t.soundOff : t.soundOn" @click="toggleMute">
           {{ muted ? t.soundOff : t.soundOn }}
@@ -411,8 +407,9 @@ onUnmounted(() => {
 }
 
 .btn-mute {
-  font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
-  font-size: 16px;
+  font-family: 'Bangers', 'Impact', sans-serif;
+  font-size: 13px;
+  letter-spacing: 1px;
   border: 2px solid #1a1a1a;
   background: #fff;
   color: #888;
@@ -424,9 +421,6 @@ onUnmounted(() => {
 }
 
 .btn-mute:hover { color: #1a1a1a; }
-.notify-btn.disabled { color: #ccc; cursor: not-allowed; opacity: 0.6; }
-.notify-btn.disabled:hover { color: #ccc; }
-.notify-btn.active { color: #00bcd4; border-color: #00bcd4; }
 
 /* =========== INPUT PANEL =========== */
 .input-panel {
@@ -878,7 +872,7 @@ onUnmounted(() => {
 
   /* --- Header actions: compact --- */
   .header-actions { gap: 4px; }
-  .btn-mute { font-size: 14px; padding: 3px 8px; border-radius: 4px; }
+  .btn-mute { font-size: 11px; padding: 3px 8px; border-radius: 4px; }
 
   /* --- Input: 16px min prevents iOS auto-zoom --- */
   .input-row input[type="text"] { font-size: 16px; padding: 10px 14px 2px; }

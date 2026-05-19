@@ -25,5 +25,7 @@ export default {
   notifyEnable: '🔔',
   notifyEnabled: '🔔',
   notifyGranted: 'Notifications on',
+  notifyBell: '🔔',
+  notifyBellOff: '🔕',
   notifyUnsupported: 'Notifications not supported',
 }
