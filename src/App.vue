@@ -183,9 +183,10 @@ function cancelEdit() {
   editingId.value = null
 }
 
-// Click backdrop → save & exit
-function onBackdropClick() {
+// Click outside edit zone → save & exit
+function onClickOutside(e) {
   if (!editingId.value) return
+  if (e.target.closest('.edit-zone')) return
   const todo = todos.value.find(t => t.id === editingId.value)
   if (todo) saveEdit(todo)
 }
@@ -214,6 +215,8 @@ function scheduleMorning() {
 load()
 onMounted(() => {
   initSortable()
+  document.addEventListener('mousedown', onClickOutside)
+  document.addEventListener('touchstart', onClickOutside)
   if (notifyGranted.value) {
     checkAndNotify(todos.value)
     scheduleMorning()
@@ -221,6 +224,8 @@ onMounted(() => {
 })
 onUnmounted(() => {
   if (sortable) sortable.destroy()
+  document.removeEventListener('mousedown', onClickOutside)
+  document.removeEventListener('touchstart', onClickOutside)
   clearTimeout(morningTimer)
   clearInterval(morningTimer)
 })
@@ -361,9 +366,6 @@ onUnmounted(() => {
         {{ t.clearBtn }}
       </button>
     </div>
-
-    <!-- ====== EDIT BACKDROP ====== -->
-    <div v-if="editingId !== null" class="edit-backdrop" @click="onBackdropClick"></div>
 
     <!-- ====== UNDO TOAST ====== -->
     <Transition name="toast">
@@ -666,15 +668,6 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   flex: 1;
-  position: relative;
-  z-index: 51;
-}
-
-.edit-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  background: transparent;
 }
 
 .edit-input {
