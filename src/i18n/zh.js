@@ -16,7 +16,7 @@ export default {
   undo: '撤销',
   undoMsg: '任务已删除',
   dueDate: '截止日期',
-  dragHint: '拖拽排序',
+  editHint: '点击编辑',
   soundOn: '🔊',
   soundOff: '🔇',
   notifyTitle: 'Todo Hero',

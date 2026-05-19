@@ -16,7 +16,7 @@ export default {
   undo: 'Undo',
   undoMsg: 'Task removed',
   dueDate: 'Due date',
-  dragHint: 'Drag to reorder',
+  editHint: 'Edit task',
   soundOn: '🔊',
   soundOff: '🔇',
   notifyTitle: 'Todo Hero',

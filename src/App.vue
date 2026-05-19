@@ -4,7 +4,6 @@ import { useI18n } from './i18n/index.js'
 import LangSwitcher from './components/LangSwitcher.vue'
 import { playSound } from './utils/sound.js'
 import { formatDate, isOverdue, isToday } from './utils/date.js'
-import Sortable from 'sortablejs'
 import { isSupported, isGranted, requestPermission, checkAndNotify } from './utils/notify.js'
 
 const { state, t, setLocale } = useI18n()
@@ -39,37 +38,6 @@ const editDueRef = ref(null)
 // --- undo state ---
 const undoItem = ref(null)
 let undoTimer = 0
-
-// --- sortable ---
-const listEl = ref(null)
-let sortable = null
-
-function initSortable() {
-  nextTick(() => {
-    const el = listEl.value?.$el || listEl.value
-    if (!el) { sortable = null; return }
-    if (sortable) sortable.destroy()
-    sortable = Sortable.create(el, {
-      handle: '.drag-handle',
-      animation: 200,
-      disabled: editingId.value !== null,
-      onEnd(evt) {
-        const { oldIndex, newIndex } = evt
-        if (oldIndex === undefined || newIndex === undefined || oldIndex === newIndex) return
-        const filtered = filteredTodos.value
-        const moved = filtered[oldIndex]
-        const target = filtered[newIndex]
-        const fromIdx = todos.value.findIndex(t => t.id === moved.id)
-        const toIdx = todos.value.findIndex(t => t.id === target.id)
-        const [item] = todos.value.splice(fromIdx, 1)
-        todos.value.splice(toIdx, 0, item)
-      },
-    })
-  })
-}
-
-watch(() => filteredTodos.value.length, initSortable)
-watch(editingId, (v) => { if (sortable) sortable.option('disabled', v !== null) })
 
 // --- load / save ---
 function load() {
@@ -211,14 +179,12 @@ function scheduleMorning() {
 // --- init ---
 load()
 onMounted(() => {
-  initSortable()
   if (notifyGranted.value) {
     checkAndNotify(todos.value)
     scheduleMorning()
   }
 })
 onUnmounted(() => {
-  if (sortable) sortable.destroy()
   clearTimeout(morningTimer)
   clearInterval(morningTimer)
 })
@@ -276,7 +242,7 @@ onUnmounted(() => {
         <p>{{ t.emptySub }}</p>
       </div>
 
-      <TransitionGroup ref="listEl" name="item" tag="ul" class="todo-list" v-else-if="filteredTodos.length">
+      <TransitionGroup name="item" tag="ul" class="todo-list" v-else-if="filteredTodos.length">
         <li
           v-for="(todo, idx) in filteredTodos"
           :key="todo.id"
@@ -287,8 +253,8 @@ onUnmounted(() => {
             overdue: !todo.done && isOverdue(todo.dueDate),
           }"
         >
-          <!-- Drag handle -->
-          <span class="drag-handle" :title="t.dragHint">⠿</span>
+          <!-- Edit trigger -->
+          <button class="edit-trigger" :title="t.editHint" @click="startEdit(todo.id)">✎</button>
 
           <!-- Checkbox -->
           <label class="check-wrap">
@@ -327,7 +293,7 @@ onUnmounted(() => {
 
           <!-- View mode -->
           <template v-else>
-            <span class="todo-text" @dblclick="startEdit(todo.id)">
+            <span class="todo-text">
               {{ todo.text }}
               <span v-if="todo.dueDate" class="due-badge" :class="{ overdue: !todo.done && isOverdue(todo.dueDate), today: !todo.done && isToday(todo.dueDate) }">
                 {{ formatDate(todo.dueDate) }}
@@ -556,23 +522,20 @@ onUnmounted(() => {
   padding-left: 10px;
 }
 
-/* --- Drag handle --- */
-.drag-handle {
-  cursor: grab;
-  font-size: 18px;
+/* --- Edit trigger --- */
+.edit-trigger {
+  cursor: pointer;
+  font-size: 16px;
   color: #ccc;
   flex-shrink: 0;
   line-height: 1;
-  touch-action: none;
+  border: none;
+  background: none;
+  padding: 2px;
+  transition: color .15s;
 }
 
-.drag-handle:active { cursor: grabbing; }
-
-/* SortableJS ghost */
-.todo-item.sortable-ghost {
-  opacity: 0.4;
-  background: #e0f7fa;
-}
+.edit-trigger:hover { color: #00bcd4; }
 
 /* --- Checkbox --- */
 .check-wrap {
@@ -906,7 +869,7 @@ onUnmounted(() => {
   .todo-text { font-size: 15px; }
   .due-badge { font-size: 11px; padding: 1px 6px; }
   .btn-del { font-size: 12px; padding: 4px 8px; }
-  .drag-handle { font-size: 15px; }
+  .edit-trigger { font-size: 18px; padding: 4px; }
 
   /* --- Footer --- */
   .footer-panel { flex-direction: column; align-items: stretch; text-align: center; }
