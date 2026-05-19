@@ -644,6 +644,7 @@ onUnmounted(() => {
 
 .edit-input {
   flex: 1;
+  min-width: 0;
   font-size: 17px;
   font-weight: 600;
   font-family: 'Inter', sans-serif;
@@ -875,8 +876,9 @@ onUnmounted(() => {
   .btn-add { padding: 0 14px; font-size: 20px; min-height: 60px; }
 
   /* --- Edit mode --- */
-  .edit-zone { gap: 4px; }
-  .edit-date { font-size: 14px; padding: 2px 6px; }
+  .edit-zone { flex-direction: column; align-items: stretch; gap: 4px; }
+  .edit-input { min-width: 0; }
+  .edit-date { font-size: 14px; padding: 2px 6px; width: 100%; }
 
   /* --- Todo items --- */
   .todo-item { padding: 10px 10px; gap: 6px; }
