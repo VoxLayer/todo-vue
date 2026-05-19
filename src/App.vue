@@ -411,9 +411,8 @@ onUnmounted(() => {
 }
 
 .btn-mute {
-  font-family: 'Bangers', 'Impact', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
-  font-size: 13px;
-  letter-spacing: 1px;
+  font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+  font-size: 16px;
   border: 2px solid #1a1a1a;
   background: #fff;
   color: #888;
@@ -879,7 +878,7 @@ onUnmounted(() => {
 
   /* --- Header actions: compact --- */
   .header-actions { gap: 4px; }
-  .btn-mute { font-size: 11px; padding: 3px 8px; border-radius: 4px; }
+  .btn-mute { font-size: 14px; padding: 3px 8px; border-radius: 4px; }
 
   /* --- Input: 16px min prevents iOS auto-zoom --- */
   .input-row input[type="text"] { font-size: 16px; padding: 10px 14px 2px; }
